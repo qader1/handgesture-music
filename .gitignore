@@ -1,4 +1,4 @@
-somefolder/*
+logging/*
 .idea/*
 !logging/*.jpg
 !logging/*.csv
