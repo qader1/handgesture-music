@@ -1,0 +1,4 @@
+somefolder/*
+.idea/*
+!logging/*.jpg
+!logging/*.csv
