@@ -21,6 +21,11 @@ lst = ['right FIST',
 
 
 def get_model_transforms(arch, xp):
+    """
+    :param arch: architecture number
+    :param xp: path to a model (saved through state_dict)
+    :return: returns a tuple contains model and augmentation object
+    """
     model = dict(inspect.getmembers(mdl))[arch](8, 3)
     model.load_state_dict(torch.load(rf'logging/XP{xp}_model'))
     model.eval()
@@ -32,28 +37,40 @@ def get_model_transforms(arch, xp):
     return model, data_transform_t
 
 
-def main(music, model, data_transforms, sensitivity=5, confidence=.8):
+def main(music, model, data_transforms, sensitivity=5, confidence=.8, fps=25):
+    """
+
+    :param music: media player object wrapped is MusicGesture class
+    :param model: trained model
+    :param data_transforms: transformations to apply to each frame before the classification (normalization and resize)
+    :param sensitivity: number of last frames that should be of the same class to issue a command to the media player
+    :param confidence: probability of highest class to accept a prediction
+    :param fps: number of frames to process per second. they are equally spread across a second and unrelated to video
+    fps
+    :return: None
+    """
     vid = cv2.VideoCapture(0)
     font = cv2.FONT_HERSHEY_PLAIN
     prev = 0
     frames = np.empty((sensitivity, 1))
     frames.fill(np.nan)
-    fps = 12
+    command = 'undetected'
     try:
         while True:
             ret, frame = vid.read()
-            prev = time() - prev
             if time() - prev > 1/fps:
+                prev = time()
                 frame_t = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame_t = data_transforms(image=frame_t)['image']
                 with torch.no_grad():
                     out = model(frame_t.unsqueeze(0)).softmax(-1)
                     predict = out.argmax(axis=-1).item() if out.max().item() > confidence else np.nan
                     frames = np.append(frames[1:], predict)
-            print(frames)
-            command = lst[int(frames[-1])] if np.all(frames[-1] == frames) else 'undetected'
-            music.gesture(command)
-            text = f'{command}, confidence: {out.max().item()}' if command != 'undetected' else command
+                    model_confidence = out.max().item()
+                command = lst[int(frames[-1])] if np.all(frames[-1] == frames) else 'undetected'
+                print(frames)
+                music.gesture(command)
+            text = f'{command}, confidence: {model_confidence}' if command != 'undetected' else command
             cv2.putText(frame,
                         text,
                         (50, 50),
@@ -78,5 +95,5 @@ if __name__ == '__main__':
     mp = vlc.MediaListPlayer()
     mp.set_media_list(ml)
     player = MusicGesture(mp, None)
-    mdl, data_t = get_model_transforms('Var7', 32)
+    mdl, data_t = get_model_transforms('Var8', 36)
     main(player, mdl, data_t, confidence=.85)

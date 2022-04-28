@@ -21,15 +21,15 @@ def get_data(batch_size: int, path: str):
     3 instances of dataloader, one for training, one for training validation and one for testing
     :param batch_size:
     :param path: path of the data folder
-    :return: 3 dataloader instances
+    :return: 3 dataloader instances for train, validation and test
     """
     # choose data augmentation.
-    # CLAHE increases contrast and visibility.
+    # CLAHE equalizes the intensities of colors, and creates artifacts that serve as noise.
     # color jitter changes brightness saturation and hue. (color augmentation)
     # fancyPCA changes colors (color augmentation)
     # randomGamma increases gamma (color augmentation)
     # downscale (lower resolution)
-    # ISONoise adds noise
+    # ISONoise adds ISO noise (makes the image grainy)
     # Rotates the image with a certain range
     # Normalize uses the mean and std of ImageNet
     data_transform = al.Compose([
@@ -61,9 +61,20 @@ def get_data(batch_size: int, path: str):
 
 
 def train(epochs, train_dataloader, val_dataloader, model, optimizer, loss_fn):
+    """
+    function to train model. each epoch both train and validation loss and accuracy are printed to the console to
+    observe the training behaviour.
+
+    :param epochs: no. of epochs to train
+    :param train_dataloader: training data as a dataloader object
+    :param val_dataloader: test data; dataloader object
+    :param model: architecture to train
+    :param optimizer: optimizing algorithm
+    :param loss_fn: loss function
+    :return: model and a tuple of metrics
+    """
     loss_train_epochs = []
     accuracy_train_epochs = []
-
     loss_test_epochs = []
     accuracy_test_epochs = []
     last_30 = int(epochs * 0.25)
@@ -87,6 +98,7 @@ def train(epochs, train_dataloader, val_dataloader, model, optimizer, loss_fn):
             if type(optimizer) == tuple:
                 if epoch >= last_30:
                     current_optimizer = optimizer[1]
+
             current_optimizer.step()
             running_loss_train += loss.item()
             _, predicted = outputs.max(1)
@@ -120,6 +132,13 @@ def train(epochs, train_dataloader, val_dataloader, model, optimizer, loss_fn):
 
 
 def test(model, dataloader):
+    """
+    function that calculates evaluation metrics for the trained model. it's used for both the test set, and training set
+    without augmentation
+    :param model: model to evaluate
+    :param dataloader: test set or training set without the augmentation
+    :return: classification report string from scikit-learn
+    """
     model.eval()
     y_true = torch.tensor([]).to(device)
     y_predicted = torch.tensor([]).to(device)
@@ -142,6 +161,15 @@ def test(model, dataloader):
 
 
 def start(args):
+    """
+    function that takes arguments from the start subparser and instantiate the model, optimizer and loss function
+    according to them.
+    it calls the training, test and log functions.
+
+    :param args: arguments in subparser. model number as integer, type of optimizer, learning rate, batch size and
+    no of epochs
+    :return: None
+    """
     data_path = r'C:\Users\Aboud\Datasets\NUS_hand_posture_data_2\Data'
     epochs = args.epochs
     train_data, train_val_data, test_data = get_data(args.batch_size, data_path)
@@ -215,7 +243,7 @@ positional.add_argument('-m',
                         '--model',
                         type=str,
                         dest='model',
-                        choices=[str(x) for x in range(1, 8)],
+                        choices=[str(x) for x in range(1, 9)],
                         help='which model to train 1, 2,.. as arguments',
                         required=True)
 

@@ -448,3 +448,75 @@ class Var7(nn.Module):
         return x
 
 
+class Var8(nn.Module):
+    """
+    fully convolutional variation with average max pooling and 5 Maxpool
+    """
+    def __init__(self, num_classes, in_channels=3):
+        super(Var8, self).__init__()
+
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(in_channels, 32, kernel_size=(3, 3), padding=1, padding_mode='circular'),  # 160 * 120
+            nn.BatchNorm2d(32),
+            nn.Mish())
+
+        self.layer2 = nn.Sequential(
+            nn.ReflectionPad2d(padding=1),
+            nn.Conv2d(32, 32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.Mish(),
+            nn.MaxPool2d(kernel_size=2, stride=2))  # 160 * 120 -> 80 * 60
+
+        self.layer3 = nn.Sequential(
+            nn.ReflectionPad2d(padding=1),
+            nn.Conv2d(32, 64, kernel_size=3),
+            nn.BatchNorm2d(64),
+            nn.Mish(),
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 80 * 60 -> 40 * 30
+            nn.Dropout(.2))
+
+        self.layer4 = nn.Sequential(
+            nn.ReflectionPad2d(padding=1),
+            nn.Conv2d(64, 128, kernel_size=3),
+            nn.BatchNorm2d(128),
+            nn.Mish(),
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 40 * 30 -> 20 * 15
+            nn.Dropout(.2))
+
+        self.layer5 = nn.Sequential(
+            nn.ReflectionPad2d(padding=1),
+            nn.Conv2d(128, 128, kernel_size=3),
+            nn.BatchNorm2d(128),
+            nn.Mish(),
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 20 * 15 -> 10 * 7
+            nn.Dropout(.2))
+
+        self.layer6 = nn.Sequential(
+            nn.ReflectionPad2d(padding=1),
+            nn.Conv2d(128, 256, kernel_size=3),
+            nn.BatchNorm2d(256),
+            nn.Mish(),
+            nn.MaxPool2d(kernel_size=2, stride=2),  # 10 * 7 -> 5 * 3
+            nn.Dropout(.25))
+
+        self.layer7 = nn.Sequential(
+            nn.ReflectionPad2d(padding=1),
+            nn.Conv2d(256, 512, kernel_size=3),
+            nn.BatchNorm2d(512),
+            nn.Mish(),
+            nn.Dropout(.2))
+
+        self.fc = nn.Sequential(
+            nn.Linear(512, num_classes))
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.layer5(x)
+        x = self.layer6(x)
+        x = self.layer7(x)
+        x = x.max(2)[0].max(2)[0]
+        x = self.fc(x)
+        return x

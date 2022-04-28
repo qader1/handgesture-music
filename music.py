@@ -2,6 +2,10 @@ from time import time
 
 
 class MusicGesture:
+    """
+    class to wrap the media player and issue commands based on gestures.
+    initialization takes media player and media list objects from vlc player.
+    """
     def __init__(self, player, lst):
         self.player = player
         self.list = lst

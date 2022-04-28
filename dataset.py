@@ -49,6 +49,13 @@ class HandGestures(Dataset):
         return files
 
     def train_test_split(self, test_size=.2, stratify=True, test_transform=None):
+        """
+        class to split the data
+        :param test_size: percentage of the data to go to test set
+        :param stratify: keep classes ratio
+        :param test_transform: transformations to apply on the test set
+        :return: 2 lists of files for train and test sets.
+        """
         if not stratify:
             len_test = round(test_size * len(self.files))
             test_files = sample(self.files, k=len_test)
